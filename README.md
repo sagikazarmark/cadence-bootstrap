@@ -9,6 +9,13 @@ Cadence Bootstrap helps setting up a Cadence instance.
 It's mostly helpful in development environments (eg. to setup domains in a Docker Compose setup).
 
 
+## Usage
+
+```bash
+docker run --rm -it -e CADENCE_HOST=docker.for.mac.host.internal -e CADENCE_DOMAIN=cadence-samples -e CADENCE_RETENTION=3 sagikazarmark/cadence-bootstrap cadence-bootstrap
+```
+
+
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE) for more information.

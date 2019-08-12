@@ -1,0 +1,11 @@
+[log]
+format = "json"
+level = "info"
+
+[cadence]
+host = "127.0.0.1"
+port = 7933
+
+[[cadence.domains]]
+name = "cadence-samples"
+workflowExecutionRetentionPeriodInDays = 3

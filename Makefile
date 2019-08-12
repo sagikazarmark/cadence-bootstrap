@@ -1,9 +1,6 @@
 # A Self-Documenting Makefile: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 
-OS = $(shell uname)
-
-# Project variables
-DOCKER_IMAGE = sagikazarmark/cadence-bootstrap
+OS = $(shell uname | tr A-Z a-z)
 
 # Build variables
 BUILD_DIR ?= build
@@ -18,9 +15,6 @@ ifeq ($(filter -v,${GOARGS}),)
 endif
 TEST_FORMAT = short-verbose
 endif
-
-# Docker variables
-DOCKER_TAG ?= ${VERSION}
 
 # Dependency versions
 GOTESTSUM_VERSION = 0.3.5
@@ -60,14 +54,7 @@ stop: ## Stop docker development environment
 	docker-compose stop
 
 config.toml:
-	sed 's/production/development/g; s/debug = false/debug = true/g; s/shutdownTimeout = "15s"/shutdownTimeout = "0s"/g; s/format = "json"/format = "logfmt"/g; s/level = "info"/level = "debug"/g; s/addr = ":10000"/addr = "127.0.0.1:10000"/g; s/httpAddr = ":8000"/httpAddr = "127.0.0.1:8000"/g; s/grpcAddr = ":8001"/grpcAddr = "127.0.0.1:8001"/g' config.toml.dist > config.toml
-
-.PHONY: run-%
-run-%: build-%
-	${BUILD_DIR}/$*
-
-.PHONY: run
-run: $(patsubst cmd/%,run-%,$(wildcard cmd/*)) ## Build and execute a binary
+	cp config.toml.dist config.toml
 
 .PHONY: clean
 clean: ## Clean builds
@@ -88,7 +75,12 @@ endif
 	go build ${GOARGS} -tags "${GOTAGS}" -ldflags "${LDFLAGS}" -o ${BUILD_DIR}/$* ./cmd/$*
 
 .PHONY: build
-build: $(patsubst cmd/%,build-%,$(wildcard cmd/*)) ## Build all binaries
+build: goversion  ## Build all binaries
+ifeq (${VERBOSE}, 1)
+	go env
+endif
+
+	go build ${GOARGS} -tags "${GOTAGS}" -ldflags "${LDFLAGS}" -o ${BUILD_DIR}/cadence-bootstrap ./internal/cmd/
 
 .PHONY: build-release
 build-release: ## Build all binaries without debug information
@@ -98,20 +90,6 @@ build-release: ## Build all binaries without debug information
 build-debug: ## Build all binaries with remote debugging capabilities
 	@${MAKE} GOARGS="${GOARGS} -gcflags \"all=-N -l\"" BUILD_DIR="${BUILD_DIR}/debug" build
 
-.PHONY: docker
-docker: ## Build a Docker image
-	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-ifeq (${DOCKER_LATEST}, 1)
-	docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-endif
-
-.PHONY: docker-debug
-docker-debug: ## Build a Docker image with remote debugging capabilities
-	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG}-debug --build-arg BUILD_TARGET=debug .
-ifeq (${DOCKER_LATEST}, 1)
-	docker tag ${DOCKER_IMAGE}:${DOCKER_TAG}-debug ${DOCKER_IMAGE}:latest-debug
-endif
-
 .PHONY: check
 check: test-all lint ## Run tests and linters
 
@@ -119,12 +97,7 @@ bin/gotestsum: bin/gotestsum-${GOTESTSUM_VERSION}
 	@ln -sf gotestsum-${GOTESTSUM_VERSION} bin/gotestsum
 bin/gotestsum-${GOTESTSUM_VERSION}:
 	@mkdir -p bin
-ifeq (${OS}, Darwin)
-	curl -L https://github.com/gotestyourself/gotestsum/releases/download/v${GOTESTSUM_VERSION}/gotestsum_${GOTESTSUM_VERSION}_darwin_amd64.tar.gz | tar -zOxf - gotestsum > ./bin/gotestsum-${GOTESTSUM_VERSION} && chmod +x ./bin/gotestsum-${GOTESTSUM_VERSION}
-endif
-ifeq (${OS}, Linux)
-	curl -L https://github.com/gotestyourself/gotestsum/releases/download/v${GOTESTSUM_VERSION}/gotestsum_${GOTESTSUM_VERSION}_linux_amd64.tar.gz | tar -zOxf - gotestsum > ./bin/gotestsum-${GOTESTSUM_VERSION} && chmod +x ./bin/gotestsum-${GOTESTSUM_VERSION}
-endif
+	curl -L https://github.com/gotestyourself/gotestsum/releases/download/v${GOTESTSUM_VERSION}/gotestsum_${GOTESTSUM_VERSION}_${OS}_amd64.tar.gz | tar -zOxf - gotestsum > ./bin/gotestsum-${GOTESTSUM_VERSION} && chmod +x ./bin/gotestsum-${GOTESTSUM_VERSION}
 
 TEST_PKGS ?= ./...
 TEST_REPORT_NAME ?= results.xml

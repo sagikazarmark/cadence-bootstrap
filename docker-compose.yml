@@ -1,0 +1,30 @@
+version: "3.1"
+
+services:
+    mysql:
+        image: mysql:5.7
+        command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_USER: cadence
+            MYSQL_PASSWORD: cadence
+        volumes:
+            - ./etc/docker/mysql-init.sql:/docker-entrypoint-initdb.d/docker-init.sql
+
+    cadence:
+        image: ubercadence/server:0.7.1-auto-setup
+        environment:
+            LOG_LEVEL: debug,info
+            DB: mysql
+            MYSQL_SEEDS: mysql
+            MYSQL_USER: cadence
+            MYSQL_PWD: cadence
+        depends_on:
+            - mysql
+
+    cadence-web:
+        image: ubercadence/web:3.3.2
+        environment:
+            CADENCE_TCHANNEL_PEERS: cadence:7933
+        depends_on:
+            - cadence

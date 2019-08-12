@@ -1,7 +1,7 @@
 *
 
 !.git/
-!.gen/
+!gen/
 !*.go
 !cmd/
 !go.*

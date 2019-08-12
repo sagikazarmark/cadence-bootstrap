@@ -1,3 +1,7 @@
+run:
+    skip-dirs:
+        - gen
+
 linters-settings:
     golint:
         min-confidence: 0.1
